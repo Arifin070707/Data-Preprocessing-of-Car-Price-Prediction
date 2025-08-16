@@ -7,19 +7,21 @@ Original file is located at
     https://colab.research.google.com/drive/1LJAiZtuzEScGZBqGGWD8W0aV-NDCQaG2
 """
 
+# import library
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
-
 from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import MinMaxScaler
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import mean_squared_error, r2_score
 
+# import dataset
 df = pd.read_csv('data_car.csv')
-df.head(5)
 
+# check dataset
+df.head(5)
 df.tail(5)
 
 df.info()
@@ -28,31 +30,39 @@ df.describe()
 
 df.dtypes
 
+# drop unnecessary columns
 df = df.drop(['Engine Fuel Type', 'Market Category', 'Vehicle Style', 'Popularity', 'Number of Doors', 'Vehicle Size'], axis=1)
 df.head(5)
 
+# rename columns
 df = df.rename(columns={'Make': 'Merek', 'Engine HP': 'HP', 'Engine Cylinders': 'Cylinders', 'Transmission Type': 'Transmission', 'Driven_Wheels': 'Driven Model', 'highway MPG': 'MPG-H', 'city mpg': 'MPG-C', 'MSRP': 'Price'})
 df.head(5)
 
 df.shape
 
+# check duplicate records
 duplicate_rows_df = df[df.duplicated()]
 print('Number of duplicate rows:', duplicate_rows_df.shape)
 
+# explain statistical information
 df.count()
 
+# drop duplicate rows
 df = df.drop_duplicates()
 df.head(5)
 
 df.count()
 
+# print columns with missing values
 print(df.isnull().sum())
 
+#handling missing values
 df['Cylinders'] = df['Cylinders'].fillna(df['Cylinders'].median())
 df['HP'] = df['HP'].fillna(df['HP'].median())
 
 print(df.isnull().sum())
 
+# data visualization
 f = plt.figure(figsize=(12,4))
 f.add_subplot(1,2,1)
 df['HP'].plot(kind='kde')
@@ -68,28 +78,35 @@ sns.boxplot(x=df['Cylinders'])
 
 df.Price.describe()
 
+# detect outlier
 Q1 = df.select_dtypes(include=np.number).quantile(0.25)
 Q3 = df.select_dtypes(include=np.number).quantile(0.75)
 IQR = Q3 - Q1
 
 df = df[~((df.select_dtypes(include=np.number) < (Q1 - 1.5 * IQR)) |(df.select_dtypes(include=np.number) > (Q3 + 1.5 * IQR))).any(axis=1)]
 
+# encode categorical features
 df = pd.get_dummies(df, drop_first=True)
 
+# separate target and predictor features
 X = df.drop('Price', axis=1)
 y = df['Price']
 
+# separate train and test data
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-scaler = StandardScaler()
+# normalization numerical features
+scaler = MinMaxScaler()
 X_train_scaled = scaler.fit_transform(X_train)
 X_test_scaled = scaler.transform(X_test)
 
+# define and train model
 model = LinearRegression()
 model.fit(X_train_scaled, y_train)
 
 y_pred = model.predict(X_test_scaled)
 
+# evaluate model
 mse = mean_squared_error(y_test, y_pred)
 rmse = np.sqrt(mse)
 r2 = r2_score(y_test, y_pred)
@@ -98,9 +115,10 @@ print("MSE:", mse)
 print("RMSE:", rmse)
 print("R² Score:", r2)
 
+# visualize model
 plt.figure(figsize=(8,6))
 sns.scatterplot(x=y_test, y=y_pred, alpha=0.6)
-plt.xlabel("Harga Aktual")
-plt.ylabel("Harga Prediksi")
-plt.title("Regresi Linear: Aktual vs Prediksi Harga Mobil")
+plt.xlabel("Actual Price")
+plt.ylabel("Prediction Price")
+plt.title("Linear Regression: Actual vs Prediction of Car Price")
 plt.show()
