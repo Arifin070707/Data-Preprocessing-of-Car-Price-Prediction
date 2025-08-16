@@ -67,3 +67,40 @@ sns.boxplot(x=df['HP'])
 sns.boxplot(x=df['Cylinders'])
 
 df.Price.describe()
+
+Q1 = df.select_dtypes(include=np.number).quantile(0.25)
+Q3 = df.select_dtypes(include=np.number).quantile(0.75)
+IQR = Q3 - Q1
+
+df = df[~((df.select_dtypes(include=np.number) < (Q1 - 1.5 * IQR)) |(df.select_dtypes(include=np.number) > (Q3 + 1.5 * IQR))).any(axis=1)]
+
+df = pd.get_dummies(df, drop_first=True)
+
+X = df.drop('Price', axis=1)
+y = df['Price']
+
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+scaler = StandardScaler()
+X_train_scaled = scaler.fit_transform(X_train)
+X_test_scaled = scaler.transform(X_test)
+
+model = LinearRegression()
+model.fit(X_train_scaled, y_train)
+
+y_pred = model.predict(X_test_scaled)
+
+mse = mean_squared_error(y_test, y_pred)
+rmse = np.sqrt(mse)
+r2 = r2_score(y_test, y_pred)
+
+print("MSE:", mse)
+print("RMSE:", rmse)
+print("R² Score:", r2)
+
+plt.figure(figsize=(8,6))
+sns.scatterplot(x=y_test, y=y_pred, alpha=0.6)
+plt.xlabel("Harga Aktual")
+plt.ylabel("Harga Prediksi")
+plt.title("Regresi Linear: Aktual vs Prediksi Harga Mobil")
+plt.show()
